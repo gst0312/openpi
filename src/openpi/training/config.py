@@ -929,7 +929,7 @@ _CONFIGS = [
             action_expert_variant="gemma_300m_lora",
         ),
         data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a",
+            repo_id="lfhv/place_droid15_04a_v2",
             base_config=DataConfig(prompt_from_task=True),
             assets=AssetsConfig(
                 assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
@@ -957,7 +957,7 @@ _CONFIGS = [
             action_horizon=16,
         ),
         data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a",
+            repo_id="lfhv/place_droid15_04a_v2",
             base_config=DataConfig(prompt_from_task=True),
             assets=AssetsConfig(
                 assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
