@@ -22,20 +22,28 @@ def initialize_checkpoint_dir(
 ) -> tuple[ocp.CheckpointManager, bool]:
     checkpoint_dir = epath.Path(checkpoint_dir).resolve()
     resuming = False
-    if checkpoint_dir.exists():
+    # LFHV: multi-process — only process 0 mutates the directory (wipe/create),
+    # everyone else waits at the barrier, then derives the same `resuming` from
+    # the settled directory state.
+    if jax.process_index() == 0 and checkpoint_dir.exists():
         if overwrite:
             checkpoint_dir.rmtree()
             checkpoint_dir.mkdir(parents=True, exist_ok=True)
             logging.info(f"Wiped checkpoint directory {checkpoint_dir}")
         elif resume:
-            resuming = True
+            pass
         else:
             raise FileExistsError(
                 f"Checkpoint directory {checkpoint_dir} already exists. Use --overwrite or --resume "
                 "to indicate how to handle it."
             )
+    if jax.process_index() == 0:
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    if jax.process_count() > 1:
+        from jax.experimental import multihost_utils
 
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        multihost_utils.sync_global_devices("initialize_checkpoint_dir")
+    resuming = resume and checkpoint_dir.exists()
 
     mngr = ocp.CheckpointManager(
         checkpoint_dir,

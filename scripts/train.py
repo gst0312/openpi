@@ -1,6 +1,7 @@
 import dataclasses
 import functools
 import logging
+import os
 import platform
 from typing import Any
 
@@ -193,6 +194,22 @@ def train_step(
 
 def main(config: _config.TrainConfig):
     init_logging()
+    if "JAX_NUM_PROCESSES" in os.environ:
+        # LFHV: multi-process data parallelism, one GPU per process (launcher:
+        # scripts/train_mp_launch.sh). On this workstation GPU-to-GPU DMA is
+        # silently corrupted by the AMD IOMMU (no NVLink), so single-process
+        # multi-GPU XLA produces NaN/deadlocks; multi-process NCCL with
+        # NCCL_P2P_DISABLE=1 stages via host memory and is verified correct
+        # (LFHV docs/sim_quality_log.md 坑#26).
+        jax.distributed.initialize(
+            coordinator_address=os.environ.get("JAX_COORDINATOR_ADDRESS", "localhost:29500"),
+            num_processes=int(os.environ["JAX_NUM_PROCESSES"]),
+            process_id=int(os.environ["JAX_PROCESS_ID"]),
+        )
+        logging.info(
+            f"jax.distributed: process {jax.process_index()}/{jax.process_count()}, "
+            f"local devices {jax.local_device_count()}, global devices {jax.device_count()}"
+        )
     logging.info(f"Running on: {platform.node()}")
 
     if config.batch_size % jax.device_count() != 0:
@@ -226,12 +243,14 @@ def main(config: _config.TrainConfig):
     batch = next(data_iter)
     logging.info(f"Initialized data loader:\n{training_utils.array_tree_to_info(batch)}")
 
-    # Log images from first batch to sanity check.
-    images_to_log = [
-        wandb.Image(np.concatenate([np.array(img[i]) for img in batch[0].images.values()], axis=1))
-        for i in range(min(5, len(next(iter(batch[0].images.values())))))
-    ]
-    wandb.log({"camera_views": images_to_log}, step=0)
+    # Log images from first batch to sanity check. Multi-process: the global
+    # batch's shards live on other processes (not addressable) — skip.
+    if jax.process_count() == 1:
+        images_to_log = [
+            wandb.Image(np.concatenate([np.array(img[i]) for img in batch[0].images.values()], axis=1))
+            for i in range(min(5, len(next(iter(batch[0].images.values())))))
+        ]
+        wandb.log({"camera_views": images_to_log}, step=0)
 
     train_state, train_state_sharding = init_train_state(config, init_rng, mesh, resume=resuming)
     jax.block_until_ready(train_state)

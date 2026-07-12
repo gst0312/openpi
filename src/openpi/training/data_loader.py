@@ -410,7 +410,13 @@ class TorchDataLoader:
             seed: The seed to use for shuffling the data.
         """
         if jax.process_count() > 1:
-            raise NotImplementedError("Data loading with multiple processes is not supported.")
+            # LFHV: multi-process data parallelism. Each process loads its own
+            # local_batch_size shard (create_torch_data_loader already divides
+            # by jax.process_count()) and __iter__ assembles the global batch
+            # via jax.make_array_from_process_local_data. Offset the shuffle
+            # seed per process so processes draw decorrelated samples
+            # (statistical sharding — no partitioned sampler needed).
+            seed = seed + jax.process_index()
 
         if len(dataset) < local_batch_size:
             raise ValueError(f"Local batch size ({local_batch_size}) is larger than the dataset size ({len(dataset)}).")
