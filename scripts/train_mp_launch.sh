@@ -11,8 +11,14 @@
 #   GPUS="1,2,3,4" LOGDIR=/path/to/logs scripts/train_mp_launch.sh <config> [args...]
 # GPU ids are PCI_BUS_ID order (= nvidia-smi order). Pass OPENPI_DATA_HOME /
 # HF_LEROBOT_HOME etc. through the environment as usual.
+#
+# NCCL_P2P_DISABLE defaults to 1 (host-staged, always safe). After the 2026-07-13
+# reboot cleared the P2P corruption (sim_quality_log 坑#26 闭环), direct P2P can be
+# enabled with NCCL_P2P_DISABLE=0 — run scripts in LFHV scripts/gpu_diag/ first if
+# the machine has been up for long.
 set -euo pipefail
 GPUS="${GPUS:-1,2,3,4}"
+NCCL_P2P_DISABLE="${NCCL_P2P_DISABLE:-1}"
 IFS=',' read -ra ARR <<< "$GPUS"
 N=${#ARR[@]}
 PORT="${PORT:-29500}"
@@ -21,7 +27,7 @@ mkdir -p "$LOGDIR"
 pids=()
 for i in "${!ARR[@]}"; do
   CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES="${ARR[$i]}" \
-  NCCL_P2P_DISABLE=1 PYTHONUNBUFFERED=1 \
+  NCCL_P2P_DISABLE="$NCCL_P2P_DISABLE" PYTHONUNBUFFERED=1 \
   JAX_COORDINATOR_ADDRESS="localhost:$PORT" JAX_NUM_PROCESSES="$N" JAX_PROCESS_ID="$i" \
   XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.9}" \
   uv run scripts/train.py "$@" > "$LOGDIR/proc$i.log" 2>&1 &
