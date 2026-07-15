@@ -1000,6 +1000,30 @@ _CONFIGS = [
         num_train_steps=20_000,
         batch_size=32,
     ),
+    TrainConfig(
+        # LFHV: full fine-tune on MOTION-PLANNING teacher data (mp branch, 15Hz native,
+        # smooth labels, includes regrasp-recovery demos). Official pi05_droid_finetune
+        # recipe: FULL 20k steps batch 32, reuse DROID norm stats. Run with
+        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets and --fsdp-devices 2+
+        # via train_mp_launch.sh (single-process multi-GPU deadlocks on this machine).
+        name="pi05_droid_lfhv_place_full_mp",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/place_mp15",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=20_000,
+        batch_size=32,
+    ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
     #
