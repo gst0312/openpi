@@ -949,6 +949,38 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV: pi05-DROID SFT on GS-rendered mustard-place teacher rollouts (LoRA, fits one 48G GPU).
+        # Dataset lives in the LFHV repo: run with HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets
+        # so repo_id "lfhv/place_droid15" resolves. Norm stats reuse pi05_droid's (same DROID action space).
+        name="pi05_droid_lfhv_place_lora_v4",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/place_droid15_04a_v4",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=20_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV: full fine-tune fallback for the config above (>70G params+opt, use --fsdp-devices 2+).
         name="pi05_droid_lfhv_place_full",
         model=pi0_config.Pi0Config(
