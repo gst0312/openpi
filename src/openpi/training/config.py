@@ -1033,6 +1033,38 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV: mp 对照第二轮:同 v1 镜像配方,夹爪标签二值化(mp_bin)——第一轮连续
+        # 斜坡标签距 0.5 执行阈值余量仅 0.05,是 0/60 的伪影之一(mp_plan §八)。
+        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
+        name="pi05_droid_lfhv_place_lora_mp_bin",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/place_mp15_bin",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV: full fine-tune on MOTION-PLANNING teacher data (mp branch, 15Hz native,
         # smooth labels, includes regrasp-recovery demos). Official pi05_droid_finetune
         # recipe: FULL 20k steps batch 32, reuse DROID norm stats. Run with
