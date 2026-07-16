@@ -1001,6 +1001,38 @@ _CONFIGS = [
         batch_size=32,
     ),
     TrainConfig(
+        # LFHV: v1 配方逐字镜像(LoRA 5k batch32,复用 DROID norm stats),只换数据为
+        # MP 教师(scene06,400 条)。对照实验主配置(mp_plan §七:换教师、控配方)。
+        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
+        name="pi05_droid_lfhv_place_lora_mp",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/place_mp15",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV: full fine-tune on MOTION-PLANNING teacher data (mp branch, 15Hz native,
         # smooth labels, includes regrasp-recovery demos). Official pi05_droid_finetune
         # recipe: FULL 20k steps batch 32, reuse DROID norm stats. Run with
