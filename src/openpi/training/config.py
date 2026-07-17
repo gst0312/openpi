@@ -1097,6 +1097,39 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV: ppo-trig-s04a-lora5k:PPO 教师数据 + 扳机式夹爪标签(trig_meas 实测
+        # 闭合平台归一,官方 DROID 形态;兼治坑#27 骑阈值)。与 ppo-raw(v1 13.3%)
+        # 单变量对照标签形态;registry 见 LFHV mp 分支 docs/finetune_registry.md。
+        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
+        name="pi05_droid_lfhv_place_lora_ppo_trig",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/place_droid15_04a_trig",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV: full fine-tune on MOTION-PLANNING teacher data (mp branch, 15Hz native,
         # smooth labels, includes regrasp-recovery demos). Official pi05_droid_finetune
         # recipe: FULL 20k steps batch 32, reuse DROID norm stats. Run with
