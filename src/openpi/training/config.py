@@ -1118,7 +1118,7 @@ _CONFIGS = [
             ),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=5_000,
+        num_train_steps=20_000,  # v1 真实条件:20k 日程,5000 快照落盘即停(registry §4.5)
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,
