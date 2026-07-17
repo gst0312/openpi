@@ -920,7 +920,7 @@ _CONFIGS = [
         # LFHV: pi05-DROID SFT on GS-rendered mustard-place teacher rollouts (LoRA, fits one 48G GPU).
         # Dataset lives in the LFHV repo: run with HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets
         # so repo_id "lfhv/place_droid15" resolves. Norm stats reuse pi05_droid's (same DROID action space).
-        name="pi05_droid_lfhv_place_lora",
+        name="pi05_mustard_place_ppo400_binary_gripper",
         model=pi0_config.Pi0Config(
             pi05=True,
             action_dim=32,
@@ -929,7 +929,7 @@ _CONFIGS = [
             action_expert_variant="gemma_300m_lora",
         ),
         data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a",
+            repo_id="lfhv/mustard_place_ppo400_binary_gripper",
             base_config=DataConfig(prompt_from_task=True),
             assets=AssetsConfig(
                 assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
@@ -953,7 +953,7 @@ _CONFIGS = [
         # 闭合平台归一,官方 DROID 形态;兼治坑#27 骑阈值)。与 ppo-raw(v1 13.3%)
         # 单变量对照标签形态;registry 见 LFHV mp 分支 docs/finetune_registry.md。
         # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
-        name="pi05_droid_lfhv_place_lora_ppo_trig",
+        name="pi05_mustard_place_ppo400_trigger_gripper",
         model=pi0_config.Pi0Config(
             pi05=True,
             action_dim=32,
@@ -962,7 +962,7 @@ _CONFIGS = [
             action_expert_variant="gemma_300m_lora",
         ),
         data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a_trig",
+            repo_id="lfhv/mustard_place_ppo400_trigger_gripper",
             base_config=DataConfig(prompt_from_task=True),
             assets=AssetsConfig(
                 assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
