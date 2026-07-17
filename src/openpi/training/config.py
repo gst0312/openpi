@@ -937,155 +937,7 @@ _CONFIGS = [
             ),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=20_000,
-        batch_size=32,
-        freeze_filter=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ).get_freeze_filter(),
-        ema_decay=None,
-    ),
-    TrainConfig(
-        # LFHV: pi05-DROID SFT on GS-rendered mustard-place teacher rollouts (LoRA, fits one 48G GPU).
-        # Dataset lives in the LFHV repo: run with HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets
-        # so repo_id "lfhv/place_droid15" resolves. Norm stats reuse pi05_droid's (same DROID action space).
-        name="pi05_droid_lfhv_place_lora_v4",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a_v4",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=20_000,
-        batch_size=32,
-        freeze_filter=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ).get_freeze_filter(),
-        ema_decay=None,
-    ),
-    TrainConfig(
-        # LFHV: full fine-tune fallback for the config above (>70G params+opt, use --fsdp-devices 2+).
-        name="pi05_droid_lfhv_place_full",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_droid15_04a",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=20_000,
-        batch_size=32,
-    ),
-    TrainConfig(
-        # LFHV: v1 配方逐字镜像(LoRA 5k batch32,复用 DROID norm stats),只换数据为
-        # MP 教师(scene06,400 条)。对照实验主配置(mp_plan §七:换教师、控配方)。
-        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
-        name="pi05_droid_lfhv_place_lora_mp",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_mp15",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=5_000,
-        batch_size=32,
-        freeze_filter=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ).get_freeze_filter(),
-        ema_decay=None,
-    ),
-    TrainConfig(
-        # LFHV: mp 对照第二轮:同 v1 镜像配方,夹爪标签二值化(mp_bin)——第一轮连续
-        # 斜坡标签距 0.5 执行阈值余量仅 0.05,是 0/60 的伪影之一(mp_plan §八)。
-        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
-        name="pi05_droid_lfhv_place_lora_mp_bin",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_mp15_bin",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=5_000,
-        batch_size=32,
-        freeze_filter=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ).get_freeze_filter(),
-        ema_decay=None,
-    ),
-    TrainConfig(
-        # LFHV: mp 对照第三轮:扳机式夹爪标签(mp_trigger,连续+饱和到 1.0)——官方
-        # DROID 标签形态(action=遥操扳机命令位置);二值/半程连续均偏离预训练先验。
-        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets,单卡 48G 可跑。
-        name="pi05_droid_lfhv_place_lora_mp_trig",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-            paligemma_variant="gemma_2b_lora",
-            action_expert_variant="gemma_300m_lora",
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_mp15_trig",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=5_000,
+        num_train_steps=5_000,  # 用户规则(2026-07-17):统一 5k 完整日程,禁用 20k。现存 13.3% ckpt 为历史 20k日程@5k快照(registry §4.5)
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,
@@ -1118,7 +970,7 @@ _CONFIGS = [
             ),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=20_000,  # v1 真实条件:20k 日程,5000 快照落盘即停(registry §4.5)
+        num_train_steps=5_000,  # 统一 5k 规则;现存 6.7% ckpt 为历史 20k日程@5k快照
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,
@@ -1128,30 +980,6 @@ _CONFIGS = [
             action_expert_variant="gemma_300m_lora",
         ).get_freeze_filter(),
         ema_decay=None,
-    ),
-    TrainConfig(
-        # LFHV: full fine-tune on MOTION-PLANNING teacher data (mp branch, 15Hz native,
-        # smooth labels, includes regrasp-recovery demos). Official pi05_droid_finetune
-        # recipe: FULL 20k steps batch 32, reuse DROID norm stats. Run with
-        # HF_LEROBOT_HOME=/playpen-ssd/ting/LFHV/datasets and --fsdp-devices 2+
-        # via train_mp_launch.sh (single-process multi-GPU deadlocks on this machine).
-        name="pi05_droid_lfhv_place_full_mp",
-        model=pi0_config.Pi0Config(
-            pi05=True,
-            action_dim=32,
-            action_horizon=16,
-        ),
-        data=LeRobotDROIDDataConfig(
-            repo_id="lfhv/place_mp15",
-            base_config=DataConfig(prompt_from_task=True),
-            assets=AssetsConfig(
-                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
-                asset_id="droid",
-            ),
-        ),
-        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=20_000,
-        batch_size=32,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
