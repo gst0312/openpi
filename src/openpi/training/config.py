@@ -937,7 +937,7 @@ _CONFIGS = [
             ),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=5_000,  # 用户规则(2026-07-17):统一 5k 完整日程,禁用 20k。现存 13.3% ckpt 为历史 20k日程@5k快照(registry §4.5)
+        num_train_steps=20_000,  # 用户规则(2026-07-18,取代"统一5k"):一律 20k 日程,评 5k/10k/20k 三快照(save_interval 1000 + keep_period 5000 默认即保)。13.3% ckpt=同日程@5k 快照(registry §4.5)
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,
