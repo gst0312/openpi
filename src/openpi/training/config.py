@@ -949,6 +949,29 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV: FULL 20k 消融(用户批准 2026-07-18):同一 v1 数据(binary 400),
+        # 唯一变量 = 微调方式 LoRA→全参;官方 pi05_droid_finetune 同款 20k 日程,
+        # save_interval 1000 + keep_period 5000 → 评 5000/10000/20000 三快照对照
+        # 13.3%(registry §十)。本机须多进程 FSDP(train_mp_launch.sh,坑#26)。
+        name="pi05_mustard_place_ppo400_binary_gripper_full",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/mustard_place_ppo400_binary_gripper",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=20_000,
+        batch_size=32,
+    ),
+    TrainConfig(
         # LFHV: ppo-trig-s04a-lora5k:PPO 教师数据 + 扳机式夹爪标签(trig_meas 实测
         # 闭合平台归一,官方 DROID 形态;兼治坑#27 骑阈值)。与 ppo-raw(v1 13.3%)
         # 单变量对照标签形态;registry 见 LFHV mp 分支 docs/finetune_registry.md。
