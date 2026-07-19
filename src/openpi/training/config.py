@@ -949,6 +949,38 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R 基线 · pour(2026-07-19 主任务切换,PORT_NOTES §l/§q):
+        # D6 GSWorld 渲染 1000 集(c12 侧抓/终点锚定/无松爪/DROID home),
+        # 30k = R2R2R 协议对齐;其余同 place 模板。
+        name="pi05_r2r2r_mustard_pour",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R 基线(分支 R2R2R,计划 §四·7 / PORT_NOTES §h):IsaacLab
         # 运动学生成 1000 集(mustard_place,双相机含腕图,夹爪二值标签)。
         # 30k 步 = R2R2R 协议对齐(论文 π0-FAST LoRA 30k/batch32/lr2.5e-5,
