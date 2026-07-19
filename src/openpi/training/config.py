@@ -949,6 +949,40 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R 基线(分支 R2R2R,计划 §四·7 / PORT_NOTES §h):IsaacLab
+        # 运动学生成 1000 集(mustard_place,双相机含腕图,夹爪二值标签)。
+        # 30k 步 = R2R2R 协议对齐(论文 π0-FAST LoRA 30k/batch32/lr2.5e-5,
+        # 计划 §二 D2 行;非 A/B 线 20k 规则),默认 save/keep 间隔即留
+        # 5k/10k/20k/30k 快照供 scaling 读数。其余口径同上方 LoRA 模板。
+        name="pi05_r2r2r_mustard_place",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_place",
+            base_config=DataConfig(prompt_from_task=True),
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV: FULL 20k 消融(用户批准 2026-07-18):同一 v1 数据(binary 400),
         # 唯一变量 = 微调方式 LoRA→全参;官方 pi05_droid_finetune 同款 20k 日程,
         # save_interval 1000 + keep_period 5000 → 评 5000/10000/20000 三快照对照
