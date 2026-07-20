@@ -430,6 +430,9 @@ class LeRobotDROIDDataConfig(DataConfigFactory):
     To convert your custom DROID dataset (<10s of hours) to LeRobot format, see examples/droid/convert_droid_data_to_lerobot.py
     """
 
+    # LFHV R2R2R 3rdcam(2026-07-20):False = 纯第三人称(腕流置零+mask)
+    use_wrist: bool = True
+
     @override
     def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
         repack_transform = _transforms.Group(
@@ -449,7 +452,7 @@ class LeRobotDROIDDataConfig(DataConfigFactory):
         )
         # We assume joint *velocity* actions, so we should *not* apply an additional delta transform.
         data_transforms = _transforms.Group(
-            inputs=[droid_policy.DroidInputs(model_type=model_config.model_type)],
+            inputs=[droid_policy.DroidInputs(model_type=model_config.model_type, use_wrist=self.use_wrist)],
             outputs=[droid_policy.DroidOutputs()],
         )
         model_transforms = ModelTransformFactory()(model_config)
@@ -938,6 +941,36 @@ _CONFIGS = [
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
         num_train_steps=20_000,  # 用户规则(2026-07-18,取代"统一5k"):一律 20k 日程,评 5k/10k/20k 三快照(save_interval 1000 + keep_period 5000 默认即保)。13.3% ckpt=同日程@5k 快照(registry §4.5)
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
+        # LFHV R2R2R 基线 · pour · 3rdcam/base(2026-07-20 用户拍板,PORT_NOTES
+        # §x):撤 D5 回归原版纯第三人称(腕流置零+mask;GS 腕流 OOD 放大器
+        # 实证),且弃 pi05_droid(双相机先验)改 **pi05_base** 起训;norm
+        # stats 自算(不能再借 droid 资产)。数据同 v3(物理门千集)。
+        name="pi05base_r2r2r_pour_3rdcam",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,

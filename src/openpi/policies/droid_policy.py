@@ -31,6 +31,9 @@ def _parse_image(image) -> np.ndarray:
 class DroidInputs(transforms.DataTransformFn):
     # Determines which model will be used.
     model_type: _model.ModelType
+    # LFHV R2R2R 3rdcam 协议(2026-07-20):False = 腕流置零+mask,纯第三人称
+    # (R2R2R 原版无腕相机;GS 评测腕流离走廊即 OOD 碎片化,详 LFHV PORT_NOTES §w)
+    use_wrist: bool = True
 
     def __call__(self, data: dict) -> dict:
         gripper_pos = np.asarray(data["observation/gripper_position"])
@@ -42,13 +45,16 @@ class DroidInputs(transforms.DataTransformFn):
         # Possibly need to parse images to uint8 (H,W,C) since LeRobot automatically
         # stores as float32 (C,H,W), gets skipped for policy inference
         base_image = _parse_image(data["observation/exterior_image_1_left"])
-        wrist_image = _parse_image(data["observation/wrist_image_left"])
+        if self.use_wrist:
+            wrist_image = _parse_image(data["observation/wrist_image_left"])
+        else:
+            wrist_image = np.zeros_like(base_image)
 
         match self.model_type:
             case _model.ModelType.PI0 | _model.ModelType.PI05:
                 names = ("base_0_rgb", "left_wrist_0_rgb", "right_wrist_0_rgb")
                 images = (base_image, wrist_image, np.zeros_like(base_image))
-                image_masks = (np.True_, np.True_, np.False_)
+                image_masks = (np.True_, np.bool_(self.use_wrist), np.False_)
             case _model.ModelType.PI0_FAST:
                 names = ("base_0_rgb", "base_1_rgb", "wrist_0_rgb")
                 # We don't mask out padding images for FAST models.
