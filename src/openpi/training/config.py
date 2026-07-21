@@ -986,6 +986,33 @@ _CONFIGS = [
         # §y):训练图像 = 原生 SAPIEN right_cam(非 GS),标签与 GS 版逐位
         # 同源;评测同域(eval --no_gs)。把 GS 视觉域从失败栈整个摘除的
         # 判定实验。3rdcam+base 协议同 §x。
+        name="pi05base_r2r2r_pour_3rdcam_mainposture",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_mainposture",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
+        # §bb 裁决 arm 的占位注释见上;以下为 simrender 原条目
         name="pi05base_r2r2r_pour_3rdcam_simrender",
         model=pi0_config.Pi0Config(
             pi05=True,
