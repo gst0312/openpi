@@ -952,6 +952,36 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R · pour · **sim+2cam arm**(2026-07-21 用户拍板,§y 追记:
+        # 2×2 格网第四格):sim 域 + 真腕流(raw sim 腕视角任意姿态渲染连贯,
+        # 无 GS OOD 碎片化)——与 GS+2cam(24.1k 全零)构成"腕相机本身 vs
+        # GS 腕流碎片化"的判定对照。
+        name="pi05base_r2r2r_pour_2cam_simrender",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_simrender2cam",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=True,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R · pour · **sim-域 arm**(2026-07-20 用户拍板,PORT_NOTES
         # §y):训练图像 = 原生 SAPIEN right_cam(非 GS),标签与 GS 版逐位
         # 同源;评测同域(eval --no_gs)。把 GS 视觉域从失败栈整个摘除的
