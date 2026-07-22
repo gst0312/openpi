@@ -232,7 +232,7 @@ def main(config: _config.TrainConfig):
         overwrite=config.overwrite,
         resume=config.resume,
     )
-    init_wandb(config, resuming=resuming, enabled=config.wandb_enabled)
+    init_wandb(config, resuming=resuming, enabled=config.wandb_enabled and jax.process_index() == 0)
 
     data_loader = _data_loader.create_data_loader(
         config,
