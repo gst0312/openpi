@@ -952,6 +952,61 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R · pour · v4.5 数据 GS+1cam(§dd 定版:姿态单值+安全化
+        # 六门+物理门;孪生 p90 0.227)。3rdcam 协议同 §x。
+        name="pi05base_r2r2r_pour_3rdcam_v45",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_v45",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
+        # LFHV R2R2R · pour · v4.5 数据 sim+2cam(§dd;同上但 sim 双相机域)
+        name="pi05base_r2r2r_pour_2cam_sim_v45",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_v45_sim2cam",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=True,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R · pour · **sim+2cam arm**(2026-07-21 用户拍板,§y 追记:
         # 2×2 格网第四格):sim 域 + 真腕流(raw sim 腕视角任意姿态渲染连贯,
         # 无 GS OOD 碎片化)——与 GS+2cam(24.1k 全零)构成"腕相机本身 vs
