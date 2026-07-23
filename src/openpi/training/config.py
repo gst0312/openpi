@@ -981,7 +981,8 @@ _CONFIGS = [
     ),
     TrainConfig(
         # LFHV R2R2R · pour · v5 数据 GS+1cam(2026-07-24:忠实 R2R2R + action 口径物理门 1000;
-        # 门/QA/eval 全对齐 velocity×15 口径,GT 动作 QA 92%)。3rdcam 协议同 v45,连续夹爪(v2 标签)。
+        # 门/QA/eval 全对齐 velocity×15 口径,GT 动作 QA 92%)。3rdcam 协议同 v45。
+        # 夹爪=二值(运动学 grip_cmd 本就 0/1;= 门/QA/eval 口径,DROID 部署也二值 @0.5,一致)。
         name="pi05base_r2r2r_pour_3rdcam_v5",
         model=pi0_config.Pi0Config(
             pi05=True,
