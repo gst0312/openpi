@@ -980,6 +980,34 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R · pour · v5 数据 GS+1cam(2026-07-24:忠实 R2R2R + action 口径物理门 1000;
+        # 门/QA/eval 全对齐 velocity×15 口径,GT 动作 QA 92%)。3rdcam 协议同 v45,连续夹爪(v2 标签)。
+        name="pi05base_r2r2r_pour_3rdcam_v5",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_v5",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R · pour · v4.5 数据 sim+2cam(§dd;同上但 sim 双相机域)
         name="pi05base_r2r2r_pour_2cam_sim_v45",
         model=pi0_config.Pi0Config(
