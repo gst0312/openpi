@@ -980,6 +980,36 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R · pour · v6 数据 GS+1cam(2026-07-24:在 v5 基础上把夹爪合拢速度改为
+        # 真机 2F-85 规格上限 150mm/s(85mm/0.567s=8.5帧@15Hz),渲染端与执行端同步;
+        # 门产率 68.7%(v5 60.7%),训练前 QA 并排/叠加均 50/50=100%(v5 92%))。
+        # 夹爪=二值(kinematic grip_cmd 本就 0/1;DROID 部署亦二值 @0.5)。
+        name="pi05base_r2r2r_pour_3rdcam_v6",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_v6",
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R · pour · v5 数据 GS+1cam(2026-07-24:忠实 R2R2R + action 口径物理门 1000;
         # 门/QA/eval 全对齐 velocity×15 口径,GT 动作 QA 92%)。3rdcam 协议同 v45。
         # 夹爪=二值(运动学 grip_cmd 本就 0/1;= 门/QA/eval 口径,DROID 部署也二值 @0.5,一致)。
