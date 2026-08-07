@@ -980,6 +980,41 @@ _CONFIGS = [
         ema_decay=None,
     ),
     TrainConfig(
+        # LFHV R2R2R · pour · hf_v0 执行器在环数据(任务 #6,2026-08-07)。与 v45 的
+        # 口径分界:①底座 = pi05_droid(不是 pi05_base);②norm stats 复用官方
+        # droid assets(AssetsConfig 指向 pi05_droid/assets/droid,严禁自算——guide
+        # 配方核心);③标签 = 原生归一化命令直通(转换器不做差分重算)。
+        # 3rdcam 口径沿 v45(use_wrist=False:腕流置零+mask)。LoRA 10k(用户拍板)。
+        name="pi05droid_r2r2r_pour_3rdcam_hf_v0",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotDROIDDataConfig(
+            repo_id="lfhv/r2r2r_mustard_pour_hf_v0",
+            assets=AssetsConfig(
+                assets_dir="gs://openpi-assets/checkpoints/pi05_droid/assets",
+                asset_id="droid",
+            ),
+            base_config=DataConfig(prompt_from_task=True),
+            use_wrist=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
+        num_train_steps=10_000,
+        batch_size=32,
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            action_dim=32,
+            action_horizon=16,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        ema_decay=None,
+    ),
+    TrainConfig(
         # LFHV R2R2R · pour · v6 数据 GS+1cam(2026-07-24:在 v5 基础上把夹爪合拢速度改为
         # 真机 2F-85 规格上限 150mm/s(85mm/0.567s=8.5帧@15Hz),渲染端与执行端同步;
         # 门产率 68.7%(v5 60.7%),训练前 QA 并排/叠加均 50/50=100%(v5 92%))。
