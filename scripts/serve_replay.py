@@ -49,14 +49,15 @@ CHUNK = 16                    # chunk length the client expects
 class TapePolicy:
     """Serves recorded action chunks in order; guards on sim divergence."""
 
-    def __init__(self, tapes, names, refs, log_dir, guard_thresh, max_anchors):
+    def __init__(self, tapes, names, refs, log_dir, guard_thresh, max_anchors, start_thresh):
         self._tapes = tapes
         self._names = names
-        self._refs = refs                 # per-episode sim-executed qpos7 [T,7]
+        self._refs = refs                 # per-episode reference qpos7 [T,7]
         self._log_dir = pathlib.Path(log_dir)
         self._log_dir.mkdir(parents=True, exist_ok=True)
         self._guard_thresh = guard_thresh
         self._max_anchors = max_anchors
+        self._start_thresh = start_thresh
         self._episode = 0
         self._reset_episode_state()
         self.metadata = {"tape_server": True, "guarded": True}
@@ -65,6 +66,8 @@ class TapePolicy:
         self._infer = 0
         self._rows = []
         self._q0 = None
+        self._start_off = None
+        self._start_hold = False
         self._tripped_at = None
         self._last_grip = 0.0
 
@@ -92,17 +95,26 @@ class TapePolicy:
 
         if i == 0:
             self._q0 = q.copy()
+            # Start gate: replaying a trajectory from a wrong start would sweep
+            # a shifted Cartesian path; hold the whole episode instead.
+            self._start_off = float(np.abs(q - ref[0]).max())
+            if self._start_off > self._start_thresh:
+                self._start_hold = True
+                logging.warning("start gate: offset %.3f rad > %.2f — holding whole episode",
+                                self._start_off, self._start_thresh)
         # Displacement-based divergence: subtracting the anchor-0 offset makes
         # the check robust to the small home-vs-episode-start mismatch
         # (measured 0.053 rad max on tape_00).
         t = min(i * H, len(ref) - 1)
         div = float(np.abs((q - self._q0) - (ref[t] - ref[0])).max())
-        if self._tripped_at is None and div > self._guard_thresh:
+        if not self._start_hold and self._tripped_at is None and div > self._guard_thresh:
             self._tripped_at = i
             logging.warning("guard TRIPPED at anchor %d (div %.3f rad) — serving zeros", i, div)
 
         held = self._max_anchors is not None and i >= self._max_anchors
-        if self._tripped_at is not None:
+        if self._start_hold:
+            mode = "start_gate"
+        elif self._tripped_at is not None:
             mode = "guard"
         elif held:
             mode = "hold"
@@ -126,6 +138,8 @@ class TapePolicy:
                 tape=name,
                 max_div=max(r["div"] for r in self._rows),
                 tripped_at=self._tripped_at,
+                start_off=self._start_off,
+                start_hold=self._start_hold,
                 max_anchors=self._max_anchors,
                 guard_thresh=self._guard_thresh,
             )
@@ -152,6 +166,9 @@ class Args:
     # Serve only the first N anchors, hold afterwards (staged release);
     # None = full episode. 12 anchors ~= the approach segment.
     max_anchors: int | None = None
+    # Max-joint offset [rad] between the measured start pose and the tape's
+    # reference start before the whole episode is held (never served).
+    start_thresh: float = 0.35
 
 
 def main(args: Args) -> None:
@@ -164,7 +181,8 @@ def main(args: Args) -> None:
         refs.append(st["qpos7"].astype(np.float64))
         names.append(os.path.basename(f)[:-4])
         logging.info("tape loaded: %s T=%d", names[-1], len(tapes[-1]))
-    policy = TapePolicy(tapes, names, refs, args.log_dir, args.guard_thresh, args.max_anchors)
+    policy = TapePolicy(tapes, names, refs, args.log_dir, args.guard_thresh,
+                        args.max_anchors, args.start_thresh)
     server = websocket_policy_server.WebsocketPolicyServer(
         policy=policy, host="0.0.0.0", port=args.port, metadata=policy.metadata)
     logging.info("guarded tape server on :%d, %d episodes, thresh %.2f, max_anchors %s, EMPTY TABLE ONLY",
