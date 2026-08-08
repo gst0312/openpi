@@ -984,7 +984,9 @@ _CONFIGS = [
         # 口径分界:①底座 = pi05_droid(不是 pi05_base);②norm stats 复用官方
         # droid assets(AssetsConfig 指向 pi05_droid/assets/droid,严禁自算——guide
         # 配方核心);③标签 = 原生归一化命令直通(转换器不做差分重算)。
-        # 3rdcam 口径沿 v45(use_wrist=False:腕流置零+mask)。LoRA 10k(用户拍板)。
+        # 3rdcam 口径沿 v45(use_wrist=False:腕流置零+mask)。首期 LoRA 10k(评 17/100),
+        # 2026-08-08 用户令延至 30k:lr 余弦 decay_steps 默认即 30k,从 9999 续训 =
+        # 正宗 30k 日程;评 20000 / 29999 两快照。
         name="pi05droid_r2r2r_pour_3rdcam_hf_v0",
         model=pi0_config.Pi0Config(
             pi05=True,
@@ -1003,7 +1005,7 @@ _CONFIGS = [
             use_wrist=False,
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
-        num_train_steps=10_000,
+        num_train_steps=30_000,
         batch_size=32,
         freeze_filter=pi0_config.Pi0Config(
             pi05=True,
